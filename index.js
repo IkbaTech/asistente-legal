@@ -1,10 +1,20 @@
 const express = require('express');
 const cors = require('cors');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const paypal = require('@paypal/paypal-server-sdk');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const paypalClient = new paypal.Client({
+  clientCredentialsAuthCredentials: {
+    oAuthClientId: process.env.PAYPAL_CLIENT_ID,
+    oAuthClientSecret: process.env.PAYPAL_CLIENT_SECRET,
+  },
+  environment: paypal.Environment.Live,
+});
+const ordersController = new paypal.OrdersController(paypalClient);
 
 app.post('/api/chat', async (req, res) => {
   const { message, conversationId, context } = req.body;
@@ -40,6 +50,41 @@ app.post('/api/chat', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Falla al conectarse con OpenAI' });
+  }
+});
+
+app.post('/api/paypal/create-order', async (req, res) => {
+  const { amount, currency = 'USD' } = req.body;
+  try {
+    const request = {
+      body: {
+        intent: paypal.CheckoutPaymentIntent.Capture,
+        purchaseUnits: [
+          {
+            amount: {
+              currencyCode: currency,
+              value: amount?.toString(),
+            },
+          },
+        ],
+      },
+    };
+    const order = await ordersController.createOrder(request);
+    res.json({ id: order.result.id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al crear orden de PayPal' });
+  }
+});
+
+app.post('/api/paypal/capture-order', async (req, res) => {
+  const { orderId } = req.body;
+  try {
+    const capture = await ordersController.captureOrder({ id: orderId });
+    res.json({ status: capture.result.status });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al capturar pago de PayPal' });
   }
 });
 
