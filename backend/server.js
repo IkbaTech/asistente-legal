@@ -29,14 +29,60 @@ app.use(helmet());
 
 // Configurar CORS
 app.use(cors({
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    // Permitir dominios de StackBlitz/WebContainer
-    /^https:\/\/.*\.local-credentialless\.webcontainer-api\.io$/,
-    /^https:\/\/.*\.webcontainer\.io$/,
-    /^https:\/\/.*\.stackblitz\.io$/
-  ],
+  origin: function (origin, callback) {
+    console.log('🔍 CORS Origin check:', origin);
+    
+    // Permitir requests sin origin (como Postman, apps móviles, etc.)
+    if (!origin) {
+      console.log('✅ CORS: No origin, allowing');
+      return callback(null, true);
+    }
+    
+    // Lista de orígenes exactos permitidos
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:3000'
+    ];
+    
+    // Patrones para StackBlitz/WebContainer y Render
+    const allowedPatterns = [
+      /^https:\/\/.*\.local-credentialless\.webcontainer-api\.io$/,
+      /^https:\/\/.*\.webcontainer\.io$/,
+      /^https:\/\/.*\.stackblitz\.io$/,
+      /^https:\/\/.*\.webcontainer-api\.io$/,
+      /^https:\/\/.*\.onrender\.com$/ // Para el propio dominio de Render
+    ];
+    
+    // Verificar orígenes exactos
+    if (allowedOrigins.includes(origin)) {
+      console.log('✅ CORS: Exact origin match:', origin);
+      return callback(null, true);
+    }
+    
+    // Verificar patrones
+    for (const pattern of allowedPatterns) {
+      if (pattern.test(origin)) {
+        console.log('✅ CORS: Pattern match:', origin, 'with pattern:', pattern);
+        return callback(null, true);
+      }
+    }
+    
+    // Si hay CORS_ORIGIN en variables de entorno, verificar también
+    if (process.env.CORS_ORIGIN) {
+      const envOrigins = process.env.CORS_ORIGIN.split(',');
+      if (envOrigins.includes(origin)) {
+        console.log('✅ CORS: Environment variable match:', origin);
+        return callback(null, true);
+      }
+    }
+    
+    console.log('❌ CORS: Origin not allowed:', origin);
+    const error = new Error('Not allowed by CORS');
+    error.status = 403;
+    callback(error);
+  },
   credentials: true
 }));
 
