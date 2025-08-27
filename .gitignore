@@ -1,0 +1,33 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Configuración de Supabase (mantener en repositorio pero ignorar cambios locales)
+# src/config/supabase-config.ts
+
+# OpenAI config (opcional - descomenta si quieres ignorar cambios)
+# src/config/openai-config.ts
+
+# OpenAI config (opcional - descomenta si quieres ignorar cambios)
+# src/config/openai-config.ts

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Suscripción – IkbaTech</title>
+
+  <!-- SDK de PayPal: poné tu CLIENT ID -->
+  <script src="https://www.paypal.com/sdk/js?client-id=TU_CLIENT_ID&vault=true&intent=subscription&currency=USD"></script>
+
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial; background:#f8fafc; margin:0; }
+    .wrap { max-width: 760px; margin: 40px auto; padding: 0 16px; }
+    .card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:24px; }
+    .title { font-size:28px; font-weight:800; color:#0f172a; margin:0 0 8px; }
+    .muted { color:#475569; margin:0 0 16px; }
+    .row { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+    .price { text-align:right; }
+    .big { font-size:28px; font-weight:800; color:#0f172a; }
+    .pill { font-size:12px; color:#64748b; }
+    ul { margin: 12px 0 0 18px; color:#334155; }
+    .fine { color:#64748b; font-size:12px; margin-top:10px; }
+    .box { background:#f1f5f9; border:1px solid #e2e8f0; border-radius:12px; padding:14px; margin-top:16px; }
+    footer { text-align:center; color:#64748b; font-size:12px; margin:16px 0 40px; }
+    a { color:#2563eb; text-decoration:none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1 class="title">Suscripción a IkbaTech</h1>
+      <p class="muted" id="plan-desc">Cargando plan…</p>
+
+      <div class="row">
+        <div>
+          <strong>Incluye:</strong>
+          <ul>
+            <li>Redacción y revisión asistida por IA</li>
+            <li>Análisis de documentos y detección de riesgos</li>
+            <li>Apoyo con jurisprudencia</li>
+            <li>Historial de chats por caso</li>
+            <li>Soporte: <a href="mailto:ikbatech@gmail.com">ikbatech@gmail.com</a></li>
+          </ul>
+        </div>
+        <div class="price">
+          <div class="big" id="plan-price">US$—</div>
+          <div class="pill">/ mes</div>
+        </div>
+      </div>
+
+      <div class="box">
+        <div id="paypal-button-container"></div>
+        <div class="fine">Pagos seguros con PayPal. Podés cancelar cuando querrás.</div>
+      </div>
+
+      <div class="box">
+        <strong>¿Qué sucede después de pagar?</strong>
+        <ol>
+          <li>Activamos tu plan al instante.</li>
+          <li>Te enviamos al dashboard para empezar.</li>
+          <li>Te llega correo con detalles de la suscripción.</li>
+        </ol>
+      </div>
+
+      <div class="box">
+        <strong>Notas legales</strong>
+        <p class="fine">Al suscribirte aceptás nuestros Términos y Privacidad. IkbaTech es apoyo para abogados; no sustituye asesoría legal profesional. Precios en USD; impuestos locales pueden aplicar en el checkout.</p>
+      </div>
+    </div>
+    <footer>
+      ¿Dudas? Escribinos a <a href="mailto:ikbatech@gmail.com">ikbatech@gmail.com</a>.
+    </footer>
+  </div>
+
+  <script type="module">
+    // 1) Reemplazá con tus plan_id reales:
+    const PLAN_IDS = {
+      basic: 'P-TU_PLAN_ID_BASIC',      // $40/mes
+      pro:   'P-TU_PLAN_ID_PRO',        // $70/mes
+      advanced: 'P-TU_PLAN_ID_ADV'      // $150/mes
+    };
+
+    // 2) Textos y precios por plan
+    const TITLES = {
+      basic: 'Plan Básico — ideal para iniciar',
+      pro: 'Plan Profesional — para despachos activos',
+      advanced: 'Plan Avanzado — para equipos exigentes'
+    };
+    const PRICES = { basic: 40, pro: 70, advanced: 150 };
+
+    // 3) Leer la URL: /checkout.html?plan=basic|pro|advanced
+    const params = new URLSearchParams(window.location.search);
+    const planKey = (params.get('plan') || 'pro').toLowerCase();
+
+    // 4) Pintar textos
+    document.getElementById('plan-desc').textContent = TITLES[planKey] || TITLES.pro;
+    document.getElementById('plan-price').textContent = `US$${(PRICES[planKey] || PRICES.pro).toFixed(0)}`;
+
+    // 5) Render del botón PayPal (subscription)
+    paypal.Buttons({
+      style: { layout: 'vertical', label: 'subscribe' },
+      createSubscription: (data, actions) => {
+        const planId = PLAN_IDS[planKey] || PLAN_IDS.pro;
+        return actions.subscription.create({ plan_id: planId });
+      },
+      onApprove: async (data) => {
+        // Si aún no tenés backend, redirigí a página de éxito:
+        window.location.href = '/payment-success.html';
+
+        // Si ya tenés Supabase y querés activar al toque:
+        // const token = localStorage.getItem('sb-access-token') || ''; // o desde tu cliente de supabase
+        // await fetch('https://TU_PROJECT.supabase.co/functions/v1/paypal-sub-activated', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        //   body: JSON.stringify({ subscriptionId: data.subscriptionID, plan: planKey })
+        // });
+        // window.location.href = '/payment-success.html';
+      },
+      onError: (err) => {
+        console.error('PayPal error', err);
+        alert('Error con el pago. Probá de nuevo.');
+      }
+    }).render('#paypal-button-container');
+  </script>
+</body>
+</html>
