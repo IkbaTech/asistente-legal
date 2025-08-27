@@ -31,57 +31,59 @@ app.use(helmet());
 app.use(cors({
   origin: function (origin, callback) {
     console.log('🔍 CORS Origin check:', origin);
-    
-    // Permitir requests sin origin (como Postman, apps móviles, etc.)
+
+    // Permitir requests con no origin (e.g., Postman, curl, o same-origin requests)
     if (!origin) {
       console.log('✅ CORS: No origin, allowing');
       return callback(null, true);
     }
-    
-    // Lista de orígenes exactos permitidos
-    const allowedOrigins = [
+
+    // Definir todos los orígenes y patrones permitidos
+    const allowed = [
       'http://localhost:5173',
       'http://localhost:3000',
       'http://127.0.0.1:5173',
-      'http://127.0.0.1:3000'
-    ];
-    
-    // Patrones para StackBlitz/WebContainer y Render
-    const allowedPatterns = [
-      /^https:\/\/.*\.local-credentialless\.webcontainer-api\.io$/,
+      'http://127.0.0.1:3000',
+      // Patrones para URLs dinámicas de WebContainer/StackBlitz
+      /^https:\/\/.*\.webcontainer-api\.io$/,
       /^https:\/\/.*\.webcontainer\.io$/,
       /^https:\/\/.*\.stackblitz\.io$/,
-      /^https:\/\/.*\.webcontainer-api\.io$/,
-      /^https:\/\/.*\.onrender\.com$/ // Para el propio dominio de Render
+      // Patrón para los propios dominios de Render si el frontend está desplegado allí
+      /^https:\/\/.*\.onrender\.com$/,
     ];
-    
-    // Verificar orígenes exactos
-    if (allowedOrigins.includes(origin)) {
-      console.log('✅ CORS: Exact origin match:', origin);
-      return callback(null, true);
-    }
-    
-    // Verificar patrones
-    for (const pattern of allowedPatterns) {
-      if (pattern.test(origin)) {
-        console.log('✅ CORS: Pattern match:', origin, 'with pattern:', pattern);
-        return callback(null, true);
-      }
-    }
-    
-    // Si hay CORS_ORIGIN en variables de entorno, verificar también
+
+    // Añadir orígenes desde la variable de entorno CORS_ORIGIN si está configurada
     if (process.env.CORS_ORIGIN) {
-      const envOrigins = process.env.CORS_ORIGIN.split(',');
-      if (envOrigins.includes(origin)) {
-        console.log('✅ CORS: Environment variable match:', origin);
-        return callback(null, true);
+      process.env.CORS_ORIGIN.split(',').forEach(envOrigin => {
+        const trimmedOrigin = envOrigin.trim();
+        if (trimmedOrigin) {
+          allowed.push(trimmedOrigin);
+        }
+      });
+    }
+
+    // Verificar si el origen está explícitamente permitido (coincidencia exacta o patrón)
+    let isAllowed = false;
+    for (const entry of allowed) {
+      if (typeof entry === 'string' && entry === origin) {
+        isAllowed = true;
+        console.log('✅ CORS: Exact origin match:', origin);
+        break;
+      } else if (entry instanceof RegExp && entry.test(origin)) {
+        isAllowed = true;
+        console.log('✅ CORS: Pattern match:', origin, 'with pattern:', entry);
+        break;
       }
     }
-    
-    console.log('❌ CORS: Origin not allowed:', origin);
-    const error = new Error('Not allowed by CORS');
-    error.status = 403;
-    callback(error);
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log('❌ CORS: Origin not allowed:', origin);
+      const error = new Error(`Origin ${origin} not allowed by CORS policy.`);
+      error.status = 403;
+      callback(error, false);
+    }
   },
   credentials: true
 }));
