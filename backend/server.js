@@ -29,7 +29,14 @@ app.use(helmet());
 
 // Configurar CORS
 app.use(cors({
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:5173', 'http://localhost:3000'],
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    // Permitir dominios de StackBlitz/WebContainer
+    /^https:\/\/.*\.local-credentialless\.webcontainer-api\.io$/,
+    /^https:\/\/.*\.webcontainer\.io$/,
+    /^https:\/\/.*\.stackblitz\.io$/
+  ],
   credentials: true
 }));
 
